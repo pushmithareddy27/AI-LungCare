@@ -1,4 +1,4 @@
 flask
 gunicorn
 flask-cors
-flaskjwtextended
+flask-jwt-extended
