@@ -3,3 +3,4 @@ gunicorn
 flask-cors
 flask-jwt-extended
 mysql-connector-python
+bcrypt
