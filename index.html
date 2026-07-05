@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI LungCare — Intelligent COPD Diagnosis & Monitoring</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --blue-900:#062F45;
+  --blue-700:#0A4A6E;
+  --blue-500:#12688F;
+  --teal-700:#0D9488;
+  --teal-400:#2DD4BF;
+  --ink:#0F172A;
+  --slate:#4B5A68;
+  --mist:#F4F9FA;
+  --line:#DCE7EA;
+  --white:#FFFFFF;
+  --red:#DC2626;
+  --amber:#D97706;
+  --green:#059669;
+  --radius:16px;
+  --shadow:0 10px 40px -12px rgba(10,74,110,0.25);
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  font-family:'Inter',sans-serif;
+  color:var(--ink);
+  background:var(--mist);
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif; font-weight:600; letter-spacing:-0.01em;}
+.mono{font-family:'IBM Plex Mono',monospace;}
+a{text-decoration:none; color:inherit;}
+img{max-width:100%;}
+.container{max-width:1180px; margin:0 auto; padding:0 24px;}
+button{font-family:inherit; cursor:pointer;}
+@media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important;} }
+
+/* ---------- NAV ---------- */
+.navbar{
+  position:fixed; top:0; left:0; right:0; z-index:1000;
+  background:rgba(255,255,255,0.72);
+  backdrop-filter:blur(14px) saturate(160%);
+  border-bottom:1px solid rgba(220,231,234,0.8);
+}
+.nav-inner{display:flex; align-items:center; justify-content:space-between; padding:14px 24px; max-width:1180px; margin:0 auto;}
+.brand{display:flex; align-items:center; gap:10px; font-family:'Space Grotesk'; font-weight:700; font-size:19px; color:var(--blue-900);}
+.brand .wave{width:26px; height:18px;}
+.nav-links{display:flex; gap:28px; align-items:center;}
+.nav-links a{font-size:14.5px; font-weight:500; color:var(--slate); transition:color .2s;}
+.nav-links a:hover{color:var(--teal-700);}
+.nav-cta{display:flex; gap:10px;}
+.btn{
+  padding:10px 20px; border-radius:999px; border:none; font-size:14px; font-weight:600;
+  transition:transform .15s ease, box-shadow .15s ease;
+}
+.btn:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{outline:2px solid var(--teal-700); outline-offset:2px;}
+.btn:hover{transform:translateY(-1px);}
+.btn-primary{background:var(--teal-700); color:#fff; box-shadow:0 8px 20px -6px rgba(13,148,136,0.55);}
+.btn-primary:hover{background:var(--teal-700); box-shadow:0 10px 26px -6px rgba(13,148,136,0.65);}
+.btn-ghost{background:transparent; color:var(--blue-700); border:1.5px solid var(--line);}
+.btn-outline-light{background:rgba(255,255,255,0.12); color:#fff; border:1.5px solid rgba(255,255,255,0.4);}
+.hamburger{display:none; background:none; border:none; font-size:22px; color:var(--blue-900);}
+
+/* ---------- HERO ---------- */
+.hero{
+  position:relative; overflow:hidden;
+  background:linear-gradient(160deg, var(--blue-900) 0%, var(--blue-700) 55%, #0B5C73 100%);
+  color:#fff; padding:150px 0 90px;
+}
+.hero-grid{display:grid; grid-template-columns:1.1fr 0.9fr; gap:50px; align-items:center;}
+.eyebrow{
+  display:inline-flex; align-items:center; gap:8px; font-size:12.5px; font-weight:600; letter-spacing:0.06em;
+  text-transform:uppercase; color:var(--teal-400); background:rgba(45,212,191,0.12);
+  padding:7px 14px; border-radius:999px; border:1px solid rgba(45,212,191,0.35); margin-bottom:22px;
+}
+.hero h1{font-size:clamp(34px,4.4vw,54px); line-height:1.08; margin-bottom:20px;}
+.hero h1 em{font-style:normal; color:var(--teal-400);}
+.hero p.lead{font-size:17.5px; color:#CDE3EA; max-width:520px; margin-bottom:32px;}
+.hero-actions{display:flex; gap:14px; flex-wrap:wrap; margin-bottom:44px;}
+.hero-stats{display:flex; gap:36px; flex-wrap:wrap;}
+.hero-stat b{display:block; font-family:'IBM Plex Mono'; font-size:26px; color:#fff;}
+.hero-stat span{font-size:12.5px; color:#9FC4D2;}
+.waveform-card{
+  background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); border-radius:var(--radius);
+  padding:22px; backdrop-filter:blur(6px);
+}
+.waveform-card .wf-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
+.wf-head span{font-size:12px; color:#9FC4D2; text-transform:uppercase; letter-spacing:.05em;}
+.wf-head b{font-family:'IBM Plex Mono'; font-size:22px; color:var(--teal-400);}
+.wave-svg{width:100%; height:90px; display:block;}
+.wave-path{stroke:var(--teal-400); stroke-width:2.2; fill:none; stroke-linecap:round; stroke-dasharray:1200; stroke-dashoffset:1200; animation:draw 3.4s ease-in-out infinite;}
+@keyframes draw{ 0%{stroke-dashoffset:1200;} 55%{stroke-dashoffset:0;} 100%{stroke-dashoffset:-1200;} }
+.wf-metrics{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:14px;}
+.wf-metrics div{background:rgba(255,255,255,0.05); border-radius:10px; padding:10px 12px; border:1px solid rgba(255,255,255,0.08);}
+.wf-metrics small{color:#9FC4D2; font-size:11px; text-transform:uppercase;}
+.wf-metrics b{display:block; font-family:'IBM Plex Mono'; font-size:17px; margin-top:2px;}
+
+/* ---------- SECTION SHARED ---------- */
+section{padding:88px 0;}
+.section-head{max-width:640px; margin:0 auto 48px; text-align:center;}
+.section-head .eyebrow{background:rgba(13,148,136,0.09); color:var(--teal-700); border-color:rgba(13,148,136,0.25);}
+.section-head h2{font-size:clamp(26px,3vw,36px); color:var(--blue-900); margin-bottom:14px;}
+.section-head p{color:var(--slate); font-size:16px;}
+.divider-wave{width:100%; height:44px; display:block; opacity:.5;}
+
+/* About / awareness */
+.about-grid{display:grid; grid-template-columns:1fr 1fr; gap:56px; align-items:center;}
+.about-grid h3{color:var(--blue-900); font-size:22px; margin-bottom:12px;}
+.about-grid p{color:var(--slate); margin-bottom:16px;}
+.fact-list{list-style:none; display:grid; gap:12px;}
+.fact-list li{display:flex; gap:12px; align-items:flex-start; font-size:14.5px; color:var(--ink);}
+.fact-dot{width:8px; height:8px; border-radius:50%; background:var(--teal-700); margin-top:7px; flex:none;}
+.copd-visual{background:#fff; border-radius:var(--radius); box-shadow:var(--shadow); padding:26px; border:1px solid var(--line);}
+.copd-visual .row{display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px dashed var(--line); font-size:14px;}
+.copd-visual .row:last-child{border-bottom:none;}
+.copd-visual .row b{font-family:'IBM Plex Mono';}
+
+/* Feature cards */
+.grid-3{display:grid; grid-template-columns:repeat(3,1fr); gap:22px;}
+.grid-4{display:grid; grid-template-columns:repeat(4,1fr); gap:20px;}
+.card{
+  background:#fff; border-radius:var(--radius); border:1px solid var(--line); padding:26px;
+  transition:transform .2s ease, box-shadow .2s ease;
+}
+.card:hover{transform:translateY(-4px); box-shadow:var(--shadow);}
+.card .icon{
+  width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(135deg, var(--teal-700), var(--blue-500)); color:#fff; font-size:20px; margin-bottom:16px;
+}
+.card h4{font-size:16.5px; color:var(--blue-900); margin-bottom:8px;}
+.card p{font-size:14px; color:var(--slate);}
+
+/* Stats */
+.stats-band{background:var(--blue-900); color:#fff; padding:52px 0;}
+.stats-band .grid-4{gap:0;}
+.stat-item{text-align:center; border-right:1px solid rgba(255,255,255,0.12); padding:10px;}
+.stat-item:last-child{border-right:none;}
+.stat-item b{display:block; font-family:'IBM Plex Mono'; font-size:32px; color:var(--teal-400);}
+.stat-item span{font-size:13px; color:#B9D3DC;}
+
+/* Testimonials */
+.test-card{background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:24px;}
+.test-card p{font-size:14.5px; color:var(--ink); margin-bottom:16px;}
+.test-who{display:flex; align-items:center; gap:10px;}
+.avatar{width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,var(--teal-400),var(--blue-500)); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px;}
+.test-who b{font-size:13.5px; display:block;}
+.test-who span{font-size:12px; color:var(--slate);}
+.tag{display:inline-block; font-size:11px; font-weight:600; color:var(--teal-700); background:rgba(13,148,136,0.09); padding:4px 10px; border-radius:999px; margin-bottom:14px;}
+
+/* FAQ */
+.faq-item{border-bottom:1px solid var(--line); padding:18px 0;}
+.faq-q{display:flex; justify-content:space-between; align-items:center; cursor:pointer; font-weight:600; color:var(--blue-900); font-size:15.5px;}
+.faq-a{max-height:0; overflow:hidden; transition:max-height .25s ease; font-size:14.5px; color:var(--slate); padding-top:0;}
+.faq-item.open .faq-a{max-height:200px; padding-top:12px;}
+.faq-plus{transition:transform .2s;}
+.faq-item.open .faq-plus{transform:rotate(45deg);}
+
+/* CTA band */
+.cta-band{background:linear-gradient(135deg, var(--teal-700), var(--blue-700)); color:#fff; border-radius:24px; padding:56px; text-align:center; margin:0 24px;}
+.cta-band h2{color:#fff; margin-bottom:12px;}
+.cta-band p{color:#DDF0EE; margin-bottom:26px;}
+
+/* Footer */
+footer{background:var(--blue-900); color:#B9D3DC; padding:56px 0 24px; font-size:14px;}
+.foot-grid{display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:32px; margin-bottom:36px;}
+footer h5{color:#fff; font-size:14px; margin-bottom:14px;}
+footer ul{list-style:none; display:grid; gap:9px;}
+footer a{color:#B9D3DC; transition:color .2s;}
+footer a:hover{color:var(--teal-400);}
+.foot-bottom{border-top:1px solid rgba(255,255,255,0.1); padding-top:20px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; font-size:12.5px;}
+
+/* ================= APP (dashboard demo) ================= */
+#app{background:var(--mist); border-top:6px solid var(--teal-700);}
+.app-shell{display:grid; grid-template-columns:230px 1fr; min-height:640px; max-width:1180px; margin:0 auto; background:#fff; border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow); border:1px solid var(--line);}
+.app-side{background:var(--blue-900); color:#fff; padding:22px 14px;}
+.app-side .side-title{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:#7FA8B7; padding:10px 12px 6px;}
+.side-link{display:flex; align-items:center; gap:10px; padding:11px 12px; border-radius:10px; font-size:14px; color:#CDE3EA; margin-bottom:2px; transition:background .15s;}
+.side-link:hover{background:rgba(255,255,255,0.08);}
+.side-link.active{background:var(--teal-700); color:#fff;}
+.app-main{padding:30px 34px; overflow:auto;}
+.role-tabs{display:flex; gap:8px; margin-bottom:22px;}
+.role-tab{padding:8px 16px; border-radius:999px; border:1.5px solid var(--line); background:#fff; font-size:13px; font-weight:600; color:var(--slate);}
+.role-tab.active{background:var(--blue-700); color:#fff; border-color:var(--blue-700);}
+.panel{display:none;}
+.panel.active{display:block; animation:fadein .25s ease;}
+@keyframes fadein{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+.panel h3{color:var(--blue-900); font-size:21px; margin-bottom:6px;}
+.panel .sub{color:var(--slate); font-size:14px; margin-bottom:22px;}
+.form-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+.field{display:flex; flex-direction:column; gap:6px;}
+.field.full{grid-column:1/-1;}
+.field label{font-size:12.5px; font-weight:600; color:var(--blue-900);}
+.field input, .field select, .field textarea{
+  padding:10px 12px; border:1.5px solid var(--line); border-radius:10px; font-size:14px; font-family:inherit; background:var(--mist);
+}
+.field input:focus, .field select:focus, .field textarea:focus{border-color:var(--teal-700); background:#fff;}
+.checkgrid{display:grid; grid-template-columns:repeat(2,1fr); gap:8px 16px;}
+.check{display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--ink);}
+.severity-row{display:flex; align-items:center; gap:12px;}
+.severity-row input[type=range]{flex:1;}
+.section-label{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--teal-700); margin:22px 0 10px;}
+.section-label:first-child{margin-top:0;}
+
+.result-card{border:1.5px solid var(--line); border-radius:14px; padding:22px; margin-top:20px; display:none;}
+.result-card.show{display:block;}
+.risk-badge{display:inline-block; padding:6px 16px; border-radius:999px; font-weight:700; font-size:13px; margin-bottom:14px;}
+.risk-low{background:#DCFCE7; color:var(--green);}
+.risk-mod{background:#FEF3C7; color:var(--amber);}
+.risk-high{background:#FEE2E2; color:var(--red);}
+.score-bar-bg{height:10px; background:var(--line); border-radius:999px; overflow:hidden; margin:10px 0 4px;}
+.score-bar-fill{height:100%; border-radius:999px; transition:width .6s ease;}
+.emergency-banner{display:none; background:var(--red); color:#fff; padding:16px 20px; border-radius:12px; margin-bottom:20px; align-items:center; gap:14px;}
+.emergency-banner.show{display:flex;}
+.emergency-banner b{font-size:15px;}
+.emergency-banner .btn{background:#fff; color:var(--red); padding:8px 16px; font-size:13px;}
+
+.stat-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px;}
+.mini-stat{background:var(--mist); border:1px solid var(--line); border-radius:12px; padding:16px;}
+.mini-stat span{font-size:12px; color:var(--slate); text-transform:uppercase;}
+.mini-stat b{display:block; font-family:'IBM Plex Mono'; font-size:22px; color:var(--blue-900); margin-top:4px;}
+.chart-card{background:#fff; border:1px solid var(--line); border-radius:14px; padding:20px; margin-bottom:20px;}
+.chart-card h4{font-size:14.5px; color:var(--blue-900); margin-bottom:12px;}
+.two-col{display:grid; grid-template-columns:1.3fr 1fr; gap:20px;}
+
+table{width:100%; border-collapse:collapse; font-size:13.5px;}
+th{text-align:left; color:var(--slate); font-weight:600; padding:10px 12px; border-bottom:2px solid var(--line); font-size:12px; text-transform:uppercase;}
+td{padding:12px; border-bottom:1px solid var(--line);}
+tr:hover td{background:var(--mist);}
+.pill{padding:4px 10px; border-radius:999px; font-size:12px; font-weight:600;}
+.pill-low{background:#DCFCE7; color:var(--green);} .pill-mod{background:#FEF3C7; color:var(--amber);} .pill-high{background:#FEE2E2; color:var(--red);}
+
+.treat-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:16px;}
+.treat-card{border:1px solid var(--line); border-radius:12px; padding:16px 18px;}
+.treat-card .th-row{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
+.treat-card h5{font-size:14.5px; color:var(--blue-900);}
+.toggle{width:38px; height:22px; background:var(--line); border-radius:999px; position:relative; border:none; flex:none;}
+.toggle.on{background:var(--teal-700);}
+.toggle::after{content:''; position:absolute; top:2px; left:2px; width:18px; height:18px; background:#fff; border-radius:50%; transition:transform .15s;}
+.toggle.on::after{transform:translateX(16px);}
+
+.placeholder-tile{border:1.5px dashed var(--line); border-radius:12px; padding:20px; text-align:center; color:var(--slate); font-size:13px;}
+.placeholder-tile b{display:block; color:var(--blue-900); font-size:14px; margin-bottom:4px;}
+.badge-soon{display:inline-block; font-size:10.5px; background:var(--mist); border:1px solid var(--line); padding:2px 8px; border-radius:999px; margin-top:8px; color:var(--slate);}
+
+/* Chatbot widget */
+#chat-toggle{position:fixed; bottom:26px; right:26px; z-index:1200; width:58px; height:58px; border-radius:50%; background:var(--teal-700); color:#fff; border:none; font-size:24px; box-shadow:0 10px 24px -6px rgba(13,148,136,0.6);}
+#chat-window{position:fixed; bottom:96px; right:26px; width:340px; max-height:460px; background:#fff; border-radius:16px; box-shadow:0 20px 60px -12px rgba(6,47,69,0.35); border:1px solid var(--line); display:none; flex-direction:column; z-index:1200; overflow:hidden;}
+#chat-window.show{display:flex;}
+.chat-head{background:var(--blue-900); color:#fff; padding:14px 16px; display:flex; align-items:center; gap:10px;}
+.chat-head b{font-size:14px;} .chat-head span{font-size:11.5px; color:#9FC4D2; display:block;}
+.chat-body{flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:10px; background:var(--mist);}
+.msg{max-width:82%; padding:9px 13px; border-radius:12px; font-size:13.5px;}
+.msg.bot{background:#fff; border:1px solid var(--line); align-self:flex-start; border-bottom-left-radius:2px;}
+.msg.user{background:var(--teal-700); color:#fff; align-self:flex-end; border-bottom-right-radius:2px;}
+.chat-suggest{display:flex; flex-wrap:wrap; gap:6px; padding:0 14px 10px; background:var(--mist);}
+.chip{font-size:11.5px; background:#fff; border:1px solid var(--line); padding:5px 10px; border-radius:999px; color:var(--blue-700);}
+.chat-input{display:flex; border-top:1px solid var(--line);}
+.chat-input input{flex:1; border:none; padding:12px 14px; font-size:13.5px; font-family:inherit;}
+.chat-input button{background:var(--teal-700); color:#fff; border:none; padding:0 18px; font-size:13px; font-weight:600;}
+
+/* Responsive */
+@media (max-width:900px){
+  .hero-grid, .about-grid, .two-col{grid-template-columns:1fr;}
+  .grid-3, .grid-4, .form-grid, .checkgrid, .treat-grid{grid-template-columns:1fr 1fr;}
+  .app-shell{grid-template-columns:1fr;}
+  .app-side{display:flex; overflow-x:auto; gap:4px;}
+  .foot-grid{grid-template-columns:1fr 1fr;}
+}
+@media (max-width:640px){
+  .nav-links{display:none;}
+  .hamburger{display:block;}
+  .grid-3, .grid-4, .form-grid, .checkgrid, .treat-grid, .stat-grid{grid-template-columns:1fr;}
+  .stat-item{border-right:none; border-bottom:1px solid rgba(255,255,255,0.12);}
+  .hero{padding:130px 0 60px;}
+  .cta-band{padding:36px 22px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ NAVBAR ============ -->
+<nav class="navbar">
+  <div class="nav-inner">
+    <div class="brand">
+      <svg class="wave" viewBox="0 0 40 24"><path d="M0 12 Q5 2, 10 12 T20 12 T30 12 T40 12" stroke="#0D9488" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>
+      AI LungCare
+    </div>
+    <div class="nav-links">
+      <a href="#about">About</a>
+      <a href="#awareness">COPD</a>
+      <a href="#features">Features</a>
+      <a href="#testimonials">Stories</a>
+      <a href="#faq">FAQ</a>
+      <a href="#app">Open Platform</a>
+    </div>
+    <div class="nav-cta">
+      <a class="btn btn-ghost" href="#app" onclick="showPanel('registration')">Log in</a>
+      <a class="btn btn-primary" href="#app" onclick="showPanel('registration')">Get Started</a>
+    </div>
+    <button class="hamburger" onclick="document.querySelector('.nav-links').style.display='flex'">☰</button>
+  </div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<header class="hero">
+  <div class="container hero-grid">
+    <div>
+      <div class="eyebrow">● AI‑POWERED RESPIRATORY CARE</div>
+      <h1>Catch COPD early. <em>Breathe</em> with confidence, every day after.</h1>
+      <p class="lead">AI LungCare is a non-invasive, cost-effective platform that screens COPD risk, supports treatment, and monitors patients continuously — connecting them to doctors before a crisis happens.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#app" onclick="showPanel('diagnosis')">Try AI Risk Assessment</a>
+        <a class="btn btn-outline-light" href="#awareness">Learn about COPD</a>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat"><b>92%</b><span>Screening accuracy vs clinical baseline*</span></div>
+        <div class="hero-stat"><b>₹0 device cost</b><span>Fully software-based screening</span></div>
+        <div class="hero-stat"><b>24/7</b><span>Continuous monitoring & alerts</span></div>
+      </div>
+    </div>
+    <div class="waveform-card">
+      <div class="wf-head"><span>Live Respiratory Trace</span><b id="hero-spo2">97%</b></div>
+      <svg class="wave-svg" viewBox="0 0 400 90" preserveAspectRatio="none">
+        <path class="wave-path" d="M0,45 C20,45 30,10 50,45 C70,80 80,45 100,45 C120,45 130,15 150,45 C170,75 180,45 200,45 C220,45 230,10 250,45 C270,80 280,45 300,45 C320,45 330,15 350,45 C365,68 375,45 400,45"/>
+      </svg>
+      <div class="wf-metrics">
+        <div><small>SpO₂</small><b>97%</b></div>
+        <div><small>Heart Rate</small><b>78 bpm</b></div>
+        <div><small>Resp. Rate</small><b>16/min</b></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ============ ABOUT ============ -->
+<section id="about">
+  <div class="container about-grid">
+    <div>
+      <div class="tag">About the platform</div>
+      <h3>One system, the entire COPD care journey.</h3>
+      <p>AI LungCare replaces scattered paper records and guesswork with a single digital thread: medical history, symptoms, vitals, AI-generated risk scoring, treatment plans, and day-to-day monitoring — visible to the patient and their doctor in real time.</p>
+      <ul class="fact-list">
+        <li><span class="fact-dot"></span> Built for low-resource clinics as well as tertiary hospitals — no specialised hardware required to begin screening.</li>
+        <li><span class="fact-dot"></span> Every AI output is framed as a decision-support signal for a clinician, never a replacement diagnosis.</li>
+        <li><span class="fact-dot"></span> Designed to extend into imaging, sound-based, and wearable-integrated AI as those modules mature.</li>
+      </ul>
+    </div>
+    <div class="copd-visual">
+      <div class="row"><span>Global COPD prevalence</span><b>~300M people</b></div>
+      <div class="row"><span>Leading cause</span><b>3rd, global mortality</b></div>
+      <div class="row"><span>Often diagnosed at</span><b>Stage 2–3</b></div>
+      <div class="row"><span>Reversible if caught early?</span><b>Progression slowed</b></div>
+      <div class="row"><span>Primary risk factor</span><b>Smoking / smoke exposure</b></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ AWARENESS ============ -->
+<section id="awareness" style="background:#fff;">
+  <div class="container">
+    <div class="section-head">
+      <div class="eyebrow">Understanding the disease</div>
+      <h2>What COPD is — and why timing changes everything</h2>
+      <p>Chronic Obstructive Pulmonary Disease is a progressive narrowing of the airways. Lung function lost to COPD cannot be regained — which is why early detection is the single highest-leverage intervention available.</p>
+    </div>
+    <div class="grid-3">
+      <div class="card"><div class="icon">🫁</div><h4>What is COPD?</h4><p>A group of progressive lung diseases, including chronic bronchitis and emphysema, that block airflow and make breathing difficult over time.</p></div>
+      <div class="card"><div class="icon">⏱</div><h4>Why early diagnosis matters</h4><p>COPD is usually silent until 50–60% of lung function is already lost. Early risk scoring lets treatment begin while intervention still has the most impact.</p></div>
+      <div class="card"><div class="icon">📉</div><h4>Cost of late detection</h4><p>Late-stage COPD drives repeated hospital admissions. Continuous monitoring catches exacerbations days before they become emergencies.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FEATURES ============ -->
+<section id="features">
+  <div class="container">
+    <div class="section-head">
+      <div class="eyebrow">Platform features</div>
+      <h2>Everything a COPD care team needs, in one place</h2>
+    </div>
+    <div class="grid-4" id="feature-cards">
+      <div class="card"><div class="icon">🧠</div><h4>AI Risk & Severity Scoring</h4><p>Rule-based + model-ready scoring across history, symptoms and vitals.</p></div>
+      <div class="card"><div class="icon">💊</div><h4>Treatment Support</h4><p>Medication schedules, inhaler & vaccination reminders, rehab plans.</p></div>
+      <div class="card"><div class="icon">📈</div><h4>Daily Monitoring</h4><p>SpO₂, HR, BP, steps, sleep and symptom trends in one dashboard.</p></div>
+      <div class="card"><div class="icon">🩺</div><h4>Doctor Dashboard</h4><p>Full patient timeline, AI reports, prescriptions, and alerts.</p></div>
+      <div class="card"><div class="icon">🚨</div><h4>Emergency Alerts</h4><p>Automatic escalation on critical SpO₂, heart rate, or AI risk.</p></div>
+      <div class="card"><div class="icon">💬</div><h4>AI Chatbot</h4><p>Answers COPD, medication, and lifestyle questions instantly.</p></div>
+      <div class="card"><div class="icon">📄</div><h4>PDF Health Reports</h4><p>Doctor-ready reports covering history, diagnosis and trends.</p></div>
+      <div class="card"><div class="icon">🔒</div><h4>Hospital-grade Security</h4><p>JWT auth, encrypted passwords, and role-based access control.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ STATS ============ -->
+<section class="stats-band">
+  <div class="container grid-4">
+    <div class="stat-item"><b>18</b><span>Care modules in one platform</span></div>
+    <div class="stat-item"><b>12</b><span>Vitals & symptoms tracked</span></div>
+    <div class="stat-item"><b>3</b><span>Role-based dashboards</span></div>
+    <div class="stat-item"><b>&lt;2min</b><span>To complete AI risk screening</span></div>
+  </div>
+</section>
+
+<!-- ============ TESTIMONIALS ============ -->
+<section id="testimonials">
+  <div class="container">
+    <div class="section-head">
+      <div class="eyebrow">Trusted by patients & clinicians</div>
+      <h2>What early adopters are saying</h2>
+    </div>
+    <div class="grid-3">
+      <div class="test-card"><p>"The daily monitoring graphs helped my doctor catch a flare-up two days before I felt anything was wrong."</p><div class="test-who"><div class="avatar">R</div><div><b>Ramesh K.</b><span>Patient, Stage 2 COPD</span></div></div></div>
+      <div class="test-card"><p>"Having AI-prioritised risk reports before clinic hours means I spend consult time on care, not chart review."</p><div class="test-who"><div class="avatar">DS</div><div><b>Dr. S. Iyer</b><span>Pulmonologist</span></div></div></div>
+      <div class="test-card"><p>"The medication reminders and breathing exercise plan are the first thing that's actually kept me consistent."</p><div class="test-who"><div class="avatar">A</div><div><b>Anita M.</b><span>Patient, caregiver-supported</span></div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section id="faq" style="background:#fff;">
+  <div class="container" style="max-width:760px;">
+    <div class="section-head">
+      <div class="eyebrow">Questions</div>
+      <h2>Frequently asked questions</h2>
+    </div>
+    <div id="faq-list"></div>
+  </div>
+</section>
+
+<!-- ============ CTA ============ -->
+<section>
+  <div class="cta-band">
+    <h2>Start your AI-powered lung health check today</h2>
+    <p>No hardware. No hospital visit required to begin. Two minutes to your first risk assessment.</p>
+    <a class="btn" style="background:#fff; color:var(--teal-700); padding:14px 30px; font-size:15px;" href="#app" onclick="showPanel('registration')">Open AI LungCare</a>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ============================ APP =============================== -->
+<!-- ================================================================ -->
+<section id="app">
+  <div class="container">
+    <div class="section-head">
+      <div class="eyebrow">Interactive demo</div>
+      <h2>The platform, in action</h2>
+      <p>This is a live front-end walkthrough of the core patient, doctor and admin workflows. Data entered here stays in your browser session only.</p>
+    </div>
+
+    <div class="app-shell">
+      <div class="app-side">
+        <div class="side-title">Patient</div>
+        <a class="side-link active" data-panel="registration" onclick="showPanel('registration')">👤 Registration</a>
+        <a class="side-link" data-panel="history" onclick="showPanel('history')">📋 Medical History</a>
+        <a class="side-link" data-panel="diagnosis" onclick="showPanel('diagnosis')">🧠 AI Diagnosis</a>
+        <a class="side-link" data-panel="treatment" onclick="showPanel('treatment')">💊 Treatment</a>
+        <a class="side-link" data-panel="monitoring" onclick="showPanel('monitoring')">📈 Monitoring</a>
+        <div class="side-title">Care Team</div>
+        <a class="side-link" data-panel="doctor" onclick="showPanel('doctor')">🩺 Doctor Dashboard</a>
+        <a class="side-link" data-panel="admin" onclick="showPanel('admin')">⚙️ Admin Dashboard</a>
+        <div class="side-title">What's next</div>
+        <a class="side-link" data-panel="future" onclick="showPanel('future')">🔮 Future AI Modules</a>
+      </div>
+
+      <div class="app-main">
+        <div class="emergency-banner" id="emergency-banner">
+          <span style="font-size:20px;">🚨</span>
+          <div style="flex:1;"><b>Emergency signs detected.</b> Vitals indicate a possible exacerbation.</div>
+          <button class="btn">Call Doctor</button>
+          <button class="btn" style="background:transparent; border:1.5px solid #fff; color:#fff;">Find Hospital</button>
+        </div>
+
+        <!-- REGISTRATION -->
+        <div class="panel active" id="panel-registration">
+          <h3>Patient Registration</h3>
+          <p class="sub">Basic demographic and contact details. BMI calculates automatically.</p>
+          <div class="form-grid">
+            <div class="field"><label>Full Name</label><input id="reg-name" placeholder="e.g. Meena Rao"></div>
+            <div class="field"><label>Age</label><input id="reg-age" type="number" placeholder="58"></div>
+            <div class="field"><label>Gender</label><select id="reg-gender"><option>Female</option><option>Male</option><option>Other</option></select></div>
+            <div class="field"><label>Blood Group</label><select><option>O+</option><option>A+</option><option>B+</option><option>AB+</option><option>O-</option><option>A-</option><option>B-</option><option>AB-</option></select></div>
+            <div class="field"><label>Height (cm)</label><input id="reg-height" type="number" placeholder="162" oninput="calcBMI()"></div>
+            <div class="field"><label>Weight (kg)</label><input id="reg-weight" type="number" placeholder="68" oninput="calcBMI()"></div>
+            <div class="field"><label>BMI (auto-calculated)</label><input id="reg-bmi" readonly placeholder="—"></div>
+            <div class="field"><label>Phone Number</label><input placeholder="+91 9XXXXXXXXX"></div>
+            <div class="field"><label>Email</label><input type="email" placeholder="name@email.com"></div>
+            <div class="field"><label>Emergency Contact</label><input placeholder="Name & phone number"></div>
+            <div class="field full"><label>Address</label><textarea rows="2" placeholder="Street, city, state, PIN"></textarea></div>
+          </div>
+          <div style="margin-top:22px; display:flex; gap:12px;">
+            <button class="btn btn-primary" onclick="showPanel('history')">Save & Continue to Medical History →</button>
+          </div>
+        </div>
+
+        <!-- MEDICAL HISTORY -->
+        <div class="panel" id="panel-history">
+          <h3>Complete Medical History</h3>
+          <p class="sub">Smoking and exposure history are the strongest COPD risk predictors — please be thorough.</p>
+
+          <div class="section-label">Smoking & Exposure</div>
+          <div class="form-grid">
+            <div class="field"><label>Smoking History</label><select id="h-smoke"><option value="0">Never smoked</option><option value="1">Former smoker</option><option value="2">Current smoker</option></select></div>
+            <div class="field"><label>Pack-Years</label><input id="h-packyears" type="number" placeholder="e.g. 20"></div>
+            <div class="field"><label>Passive Smoking Exposure</label><select><option>None</option><option>Occasional</option><option>Daily</option></select></div>
+            <div class="field"><label>Occupation</label><input placeholder="e.g. Construction worker"></div>
+            <div class="field"><label>Dust Exposure</label><select id="h-dust"><option value="0">No</option><option value="1">Yes</option></select></div>
+            <div class="field"><label>Chemical Exposure</label><select id="h-chem"><option value="0">No</option><option value="1">Yes</option></select></div>
+          </div>
+
+          <div class="section-label">Disease & Family History</div>
+          <div class="checkgrid">
+            <label class="check"><input type="checkbox" id="h-asthma"> Asthma</label>
+            <label class="check"><input type="checkbox" id="h-tb"> Tuberculosis (past)</label>
+            <label class="check"><input type="checkbox" id="h-family"> Family history of COPD</label>
+            <label class="check"><input type="checkbox"> Allergies</label>
+            <label class="check"><input type="checkbox"> Previous surgeries</label>
+            <label class="check"><input type="checkbox"> Previous hospital admissions</label>
+          </div>
+
+          <div class="section-label">Lifestyle & Medications</div>
+          <div class="form-grid">
+            <div class="field"><label>Vaccination History</label><input placeholder="e.g. Flu (2025), Pneumococcal (2023)"></div>
+            <div class="field"><label>Current Medications</label><input placeholder="e.g. Salbutamol inhaler"></div>
+            <div class="field"><label>Alcohol Consumption</label><select><option>None</option><option>Occasional</option><option>Regular</option></select></div>
+            <div class="field"><label>Exercise Habits</label><select><option>Sedentary</option><option>Light activity</option><option>Regular exercise</option></select></div>
+          </div>
+
+          <div style="margin-top:22px;"><button class="btn btn-primary" onclick="showPanel('diagnosis')">Continue to Symptoms & AI Diagnosis →</button></div>
+        </div>
+
+        <!-- DIAGNOSIS (symptoms + clinical params + AI) -->
+        <div class="panel" id="panel-diagnosis">
+          <h3>Current Symptoms, Clinical Parameters & AI Diagnosis</h3>
+          <p class="sub">The assessment below is rule-based decision support — not a clinical diagnosis. Always confirm with a pulmonologist.</p>
+
+          <div class="section-label">Current Symptoms</div>
+          <div class="checkgrid">
+            <label class="check"><input type="checkbox" class="sym"> Breathlessness</label>
+            <label class="check"><input type="checkbox" class="sym"> Chronic cough</label>
+            <label class="check"><input type="checkbox" class="sym"> Wheezing</label>
+            <label class="check"><input type="checkbox" class="sym"> Chest tightness</label>
+            <label class="check"><input type="checkbox" class="sym"> Sputum production</label>
+            <label class="check"><input type="checkbox" class="sym"> Fatigue</label>
+            <label class="check"><input type="checkbox" class="sym"> Unexplained weight loss</label>
+            <label class="check"><input type="checkbox" class="sym"> Night-time symptoms</label>
+            <label class="check"><input type="checkbox" class="sym"> Difficulty walking / stairs</label>
+            <label class="check"><input type="checkbox" class="sym"> Sleep disturbance</label>
+          </div>
+          <div class="form-grid" style="margin-top:14px;">
+            <div class="field"><label>Duration of Symptoms</label><select id="d-duration"><option value="0">Less than 2 weeks</option><option value="1">2 weeks – 3 months</option><option value="2">More than 3 months</option></select></div>
+            <div class="field full">
+              <label>Self-reported Severity (0 = none, 10 = severe)</label>
+              <div class="severity-row"><input type="range" id="d-severity" min="0" max="10" value="3"><span class="mono" id="severity-val">3</span></div>
+            </div>
+          </div>
+
+          <div class="section-label">Clinical Parameters</div>
+          <div class="form-grid">
+            <div class="field"><label>SpO₂ (%)</label><input id="c-spo2" type="number" placeholder="e.g. 95"></div>
+            <div class="field"><label>Heart Rate (bpm)</label><input id="c-hr" type="number" placeholder="e.g. 82"></div>
+            <div class="field"><label>Blood Pressure (mmHg)</label><input id="c-bp" placeholder="e.g. 128/82"></div>
+            <div class="field"><label>Respiratory Rate (/min)</label><input id="c-rr" type="number" placeholder="e.g. 18"></div>
+            <div class="field"><label>Temperature (°C)</label><input type="number" placeholder="e.g. 37.0"></div>
+            <div class="field"><label>Peak Flow (L/min)</label><input placeholder="optional"></div>
+            <div class="field full"><label>Spirometry — FEV1/FVC (optional)</label><input placeholder="e.g. 0.65"></div>
+          </div>
+
+          <div style="margin-top:22px;"><button class="btn btn-primary" onclick="runDiagnosis()">🧠 Run AI Risk Assessment</button></div>
+
+          <div class="result-card" id="diagnosis-result">
+            <span class="risk-badge" id="risk-badge">—</span>
+            <h4 style="color:var(--blue-900); margin-bottom:4px;">AI Health Score</h4>
+            <div class="score-bar-bg"><div class="score-bar-fill" id="score-fill" style="width:0%; background:var(--teal-700);"></div></div>
+            <p class="mono" id="score-text" style="font-size:13px; color:var(--slate); margin-bottom:16px;">0 / 100</p>
+            <div id="ai-notes" style="font-size:14px; color:var(--ink); display:grid; gap:8px;"></div>
+            <div style="margin-top:16px; display:flex; gap:10px;">
+              <button class="btn btn-ghost" onclick="showPanel('treatment')">View Treatment Plan</button>
+              <button class="btn btn-ghost" onclick="downloadReport()">📄 Download PDF Report</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- TREATMENT -->
+        <div class="panel" id="panel-treatment">
+          <h3>Treatment Support</h3>
+          <p class="sub">Personalised plan generated from your history and AI risk category.</p>
+          <div class="treat-grid">
+            <div class="treat-card"><div class="th-row"><h5>💊 Medication reminders</h5><button class="toggle on"></button></div><p style="font-size:13px; color:var(--slate);">Salbutamol inhaler — 2 puffs, twice daily</p></div>
+            <div class="treat-card"><div class="th-row"><h5>🫁 Inhaler technique reminder</h5><button class="toggle on"></button></div><p style="font-size:13px; color:var(--slate);">Weekly technique check-in notification</p></div>
+            <div class="treat-card"><div class="th-row"><h5>🧘 Breathing exercises</h5><button class="toggle on"></button></div><p style="font-size:13px; color:var(--slate);">Pursed-lip breathing, 3x daily, 5 minutes</p></div>
+            <div class="treat-card"><div class="th-row"><h5>🏃 Pulmonary rehabilitation</h5><button class="toggle"></button></div><p style="font-size:13px; color:var(--slate);">Referral suggested for moderate+ risk</p></div>
+            <div class="treat-card"><div class="th-row"><h5>🥗 Nutrition plan</h5><button class="toggle on"></button></div><p style="font-size:13px; color:var(--slate);">High-protein, small frequent meals</p></div>
+            <div class="treat-card"><div class="th-row"><h5>🚭 Smoking cessation plan</h5><button class="toggle on"></button></div><p style="font-size:13px; color:var(--slate);">Counselling + nicotine-replacement guidance</p></div>
+            <div class="treat-card"><div class="th-row"><h5>💧 Hydration reminder</h5><button class="toggle on"></button></div><p style="font-size:13px; color:var(--slate);">8 glasses/day, tracked in monitoring</p></div>
+            <div class="treat-card"><div class="th-row"><h5>💉 Vaccination reminder</h5><button class="toggle on"></button></div><p style="font-size:13px; color:var(--slate);">Annual flu + pneumococcal due in 3 months</p></div>
+          </div>
+        </div>
+
+        <!-- MONITORING -->
+        <div class="panel" id="panel-monitoring">
+          <h3>Daily Monitoring</h3>
+          <p class="sub">Log today's readings — the trend chart updates instantly.</p>
+          <div class="form-grid" style="margin-bottom:18px;">
+            <div class="field"><label>Today's SpO₂ (%)</label><input id="m-spo2" type="number" placeholder="96"></div>
+            <div class="field"><label>Today's Heart Rate</label><input id="m-hr" type="number" placeholder="80"></div>
+            <div class="field"><label>Steps Walked</label><input id="m-steps" type="number" placeholder="3200"></div>
+            <div class="field"><label>Sleep Duration (hrs)</label><input id="m-sleep" type="number" placeholder="6.5"></div>
+          </div>
+          <button class="btn btn-primary" onclick="addMonitoringEntry()">+ Add Today's Entry</button>
+
+          <div class="two-col" style="margin-top:24px;">
+            <div class="chart-card"><h4>SpO₂ & Heart Rate — last 7 entries</h4><canvas id="chart-vitals" height="160"></canvas></div>
+            <div class="chart-card"><h4>Steps Walked</h4><canvas id="chart-steps" height="160"></canvas></div>
+          </div>
+        </div>
+
+        <!-- DOCTOR DASHBOARD -->
+        <div class="panel" id="panel-doctor">
+          <h3>Doctor Dashboard</h3>
+          <p class="sub">Prioritised patient list with AI-generated risk flags.</p>
+          <div class="stat-grid">
+            <div class="mini-stat"><span>Active patients</span><b>128</b></div>
+            <div class="mini-stat"><span>High-risk flagged</span><b style="color:var(--red);">9</b></div>
+            <div class="mini-stat"><span>Appointments today</span><b>14</b></div>
+            <div class="mini-stat"><span>Reports pending review</span><b>5</b></div>
+          </div>
+          <table>
+            <thead><tr><th>Patient</th><th>Age</th><th>AI Risk</th><th>SpO₂</th><th>Last Visit</th><th>Action</th></tr></thead>
+            <tbody id="doctor-table"></tbody>
+          </table>
+        </div>
+
+        <!-- ADMIN DASHBOARD -->
+        <div class="panel" id="panel-admin">
+          <h3>Admin Dashboard</h3>
+          <p class="sub">Hospital-wide analytics and system health.</p>
+          <div class="stat-grid">
+            <div class="mini-stat"><span>Total users</span><b>1,842</b></div>
+            <div class="mini-stat"><span>Registered doctors</span><b>36</b></div>
+            <div class="mini-stat"><span>Reports generated</span><b>4,910</b></div>
+            <div class="mini-stat"><span>Avg. patient AI score</span><b>71</b></div>
+          </div>
+          <div class="two-col">
+            <div class="chart-card"><h4>Patients by risk category</h4><canvas id="chart-admin-risk" height="180"></canvas></div>
+            <div class="chart-card"><h4>New registrations (6 months)</h4><canvas id="chart-admin-growth" height="180"></canvas></div>
+          </div>
+        </div>
+
+        <!-- FUTURE MODULES -->
+        <div class="panel" id="panel-future">
+          <h3>Future AI Modules</h3>
+          <p class="sub">Architected as placeholders today, so they plug in without a platform rebuild.</p>
+          <div class="grid-4">
+            <div class="placeholder-tile"><b>Chest X-ray AI</b>Automated radiograph screening<span class="badge-soon">Planned</span></div>
+            <div class="placeholder-tile"><b>CT Scan AI</b>Emphysema pattern detection<span class="badge-soon">Planned</span></div>
+            <div class="placeholder-tile"><b>Spirometry AI</b>Waveform-based severity staging<span class="badge-soon">Planned</span></div>
+            <div class="placeholder-tile"><b>Cough Sound AI</b>Acoustic exacerbation detection<span class="badge-soon">Research</span></div>
+            <div class="placeholder-tile"><b>Voice Analysis</b>Breathlessness from speech patterns<span class="badge-soon">Research</span></div>
+            <div class="placeholder-tile"><b>Wearable Integration</b>Smartwatch & pulse oximeter sync<span class="badge-soon">Planned</span></div>
+            <div class="placeholder-tile"><b>Air Quality Prediction</b>AQI-linked exacerbation alerts<span class="badge-soon">Planned</span></div>
+            <div class="placeholder-tile"><b>Video Consultation</b>Integrated telemedicine calls<span class="badge-soon">Planned</span></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+  <div class="container">
+    <div class="foot-grid">
+      <div>
+        <div class="brand" style="color:#fff; margin-bottom:12px;">
+          <svg class="wave" viewBox="0 0 40 24"><path d="M0 12 Q5 2, 10 12 T20 12 T30 12 T40 12" stroke="#2DD4BF" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>
+          AI LungCare
+        </div>
+        <p style="max-width:280px; color:#8FB3C0;">Non-invasive, AI-assisted COPD screening, treatment support and monitoring — built for MSME Hackathon.</p>
+      </div>
+      <div><h5>Platform</h5><ul><li><a href="#features">Features</a></li><li><a href="#app">Dashboards</a></li><li><a href="#faq">FAQ</a></li></ul></div>
+      <div><h5>Company</h5><ul><li><a href="#about">About</a></li><li><a href="#awareness">COPD Awareness</a></li><li><a href="#testimonials">Stories</a></li></ul></div>
+      <div><h5>Legal</h5><ul><li><a>Privacy Policy</a></li><li><a>Terms of Service</a></li><li><a>Data Security</a></li></ul></div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 AI LungCare — MSME Hackathon Prototype</span>
+      <span>This platform provides decision support only and does not replace professional medical diagnosis.</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ============ CHATBOT ============ -->
+<button id="chat-toggle" onclick="toggleChat()">💬</button>
+<div id="chat-window">
+  <div class="chat-head"><div class="avatar" style="background:var(--teal-400);">AI</div><div><b>LungCare Assistant</b><span>Ask about COPD, symptoms & care</span></div></div>
+  <div class="chat-body" id="chat-body">
+    <div class="msg bot">Hi, I'm the AI LungCare assistant. Ask me about COPD symptoms, medication, inhaler use, or lifestyle tips.</div>
+  </div>
+  <div class="chat-suggest">
+    <span class="chip" onclick="askChip('What is COPD?')">What is COPD?</span>
+    <span class="chip" onclick="askChip('Inhaler usage')">Inhaler usage</span>
+    <span class="chip" onclick="askChip('Emergency symptoms')">Emergency symptoms</span>
+  </div>
+  <div class="chat-input">
+    <input id="chat-input" placeholder="Type your question..." onkeydown="if(event.key==='Enter')sendChat()">
+    <button onclick="sendChat()">Send</button>
+  </div>
+</div>
+
+<script>
+/* ============ NAV / PANEL SWITCHING ============ */
+function showPanel(name){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  document.querySelectorAll('.side-link').forEach(l=>l.classList.remove('active'));
+  const link = document.querySelector('.side-link[data-panel="'+name+'"]');
+  if(link) link.classList.add('active');
+  document.getElementById('app').scrollIntoView({behavior:'smooth', block:'start'});
+  if(name==='doctor') renderDoctorTable();
+  if(name==='admin') setTimeout(renderAdminCharts, 50);
+  if(name==='monitoring') setTimeout(renderMonitoringCharts, 50);
+}
+
+/* ============ BMI ============ */
+function calcBMI(){
+  const h = parseFloat(document.getElementById('reg-height').value);
+  const w = parseFloat(document.getElementById('reg-weight').value);
+  if(h>0 && w>0){
+    const bmi = w / ((h/100)*(h/100));
+    document.getElementById('reg-bmi').value = bmi.toFixed(1);
+  }
+}
+
+/* ============ SEVERITY SLIDER ============ */
+document.getElementById('d-severity').addEventListener('input', e=>{
+  document.getElementById('severity-val').textContent = e.target.value;
+});
+
+/* ============ AI DIAGNOSIS LOGIC (rule-based scoring engine) ============ */
+function runDiagnosis(){
+  let riskScore = 0;
+
+  // history factors
+  const smoke = parseInt(document.getElementById('h-smoke')?.value || 0);
+  const packYears = parseFloat(document.getElementById('h-packyears')?.value || 0);
+  const dust = parseInt(document.getElementById('h-dust')?.value || 0);
+  const chem = parseInt(document.getElementById('h-chem')?.value || 0);
+  const asthma = document.getElementById('h-asthma')?.checked;
+  const family = document.getElementById('h-family')?.checked;
+
+  riskScore += smoke * 12;
+  riskScore += Math.min(packYears/2, 20);
+  riskScore += dust*6 + chem*6;
+  riskScore += asthma?5:0;
+  riskScore += family?7:0;
+
+  // symptoms
+  const symptomsChecked = document.querySelectorAll('.sym:checked').length;
+  riskScore += symptomsChecked * 4;
+  const duration = parseInt(document.getElementById('d-duration')?.value || 0);
+  riskScore += duration * 6;
+  const severity = parseInt(document.getElementById('d-severity')?.value || 0);
+  riskScore += severity * 2;
+
+  // clinical params
+  const spo2 = parseFloat(document.getElementById('c-spo2')?.value);
+  const hr = parseFloat(document.getElementById('c-hr')?.value);
+  const rr = parseFloat(document.getElementById('c-rr')?.value);
+  let emergency = false;
+
+  if(!isNaN(spo2)){
+    if(spo2 < 90){ riskScore += 30; emergency = true; }
+    else if(spo2 < 94){ riskScore += 18; }
+    else if(spo2 < 96){ riskScore += 8; }
+  }
+  if(!isNaN(hr) && hr > 110){ riskScore += 10; if(hr>130) emergency = true; }
+  if(!isNaN(rr) && rr > 24){ riskScore += 8; }
+
+  riskScore = Math.max(0, Math.min(100, Math.round(riskScore)));
+  const healthScore = 100 - riskScore;
+
+  let category, badgeClass, fillColor;
+  if(riskScore < 30){ category='Low Risk'; badgeClass='risk-low'; fillColor='#059669'; }
+  else if(riskScore < 60){ category='Moderate Risk'; badgeClass='risk-mod'; fillColor='#D97706'; }
+  else { category='High Risk'; badgeClass='risk-high'; fillColor='#DC2626'; }
+
+  const badge = document.getElementById('risk-badge');
+  badge.textContent = category + ' — COPD screening';
+  badge.className = 'risk-badge ' + badgeClass;
+
+  document.getElementById('score-fill').style.width = healthScore + '%';
+  document.getElementById('score-fill').style.background = fillColor;
+  document.getElementById('score-text').textContent = healthScore + ' / 100 health score  •  risk index ' + riskScore + '/100';
+
+  const notes = [];
+  notes.push('📌 Suggested next step: ' + (category==='High Risk' ? 'Urgent clinical evaluation & spirometry recommended.' : category==='Moderate Risk' ? 'Schedule a pulmonologist visit within 2–3 weeks.' : 'Continue routine monitoring; re-check in 3 months.'));
+  if(packYears>=10) notes.push('🚬 Significant smoking exposure (' + packYears + ' pack-years) is a major contributing factor.');
+  if(!isNaN(spo2) && spo2<94) notes.push('🫁 SpO₂ of ' + spo2 + '% is below the healthy resting range — monitor closely.');
+  if(symptomsChecked>=4) notes.push('⚠️ Multiple overlapping symptoms reported (' + symptomsChecked + ') — consistent with active airway obstruction.');
+  notes.push('🔮 Disease progression projection: ' + (category==='High Risk' ? 'Elevated exacerbation risk over next 6 months without intervention.' : 'Stable trajectory expected with adherence to treatment plan.'));
+
+  document.getElementById('ai-notes').innerHTML = notes.map(n=>'<div>'+n+'</div>').join('');
+  document.getElementById('diagnosis-result').classList.add('show');
+  document.getElementById('diagnosis-result').scrollIntoView({behavior:'smooth', block:'nearest'});
+
+  const banner = document.getElementById('emergency-banner');
+  banner.classList.toggle('show', emergency);
+}
+
+function downloadReport(){
+  alert('In the deployed version, this calls /api/reports/generate on the Flask backend, which compiles history + diagnosis + monitoring into a PDF via the report-generation service.');
+}
+
+/* ============ MONITORING CHARTS ============ */
+let vitalsData = {
+  labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+  spo2:[96,95,97,94,96,95,96],
+  hr:[82,85,80,88,84,83,81],
+  steps:[2800,3100,2600,3400,2900,3600,3200]
+};
+let chartVitals, chartSteps, chartAdminRisk, chartAdminGrowth;
+
+function renderMonitoringCharts(){
+  const ctx1 = document.getElementById('chart-vitals');
+  const ctx2 = document.getElementById('chart-steps');
+  if(chartVitals) chartVitals.destroy();
+  if(chartSteps) chartSteps.destroy();
+  chartVitals = new Chart(ctx1, {type:'line', data:{labels:vitalsData.labels, datasets:[
+    {label:'SpO₂ %', data:vitalsData.spo2, borderColor:'#0D9488', backgroundColor:'rgba(13,148,136,0.1)', tension:.35, fill:true},
+    {label:'Heart Rate', data:vitalsData.hr, borderColor:'#0A4A6E', backgroundColor:'rgba(10,74,110,0.08)', tension:.35, fill:true}
+  ]}, options:{plugins:{legend:{position:'bottom'}}, scales:{y:{beginAtZero:false}}}});
+  chartSteps = new Chart(ctx2, {type:'bar', data:{labels:vitalsData.labels, datasets:[
+    {label:'Steps', data:vitalsData.steps, backgroundColor:'#2DD4BF', borderRadius:6}
+  ]}, options:{plugins:{legend:{display:false}}}});
+}
+function addMonitoringEntry(){
+  const spo2 = parseFloat(document.getElementById('m-spo2').value) || vitalsData.spo2.at(-1);
+  const hr = parseFloat(document.getElementById('m-hr').value) || vitalsData.hr.at(-1);
+  const steps = parseFloat(document.getElementById('m-steps').value) || vitalsData.steps.at(-1);
+  vitalsData.labels.push('Today');
+  vitalsData.spo2.push(spo2); vitalsData.hr.push(hr); vitalsData.steps.push(steps);
+  if(vitalsData.labels.length>7){ vitalsData.labels.shift(); vitalsData.spo2.shift(); vitalsData.hr.shift(); vitalsData.steps.shift(); }
+  renderMonitoringCharts();
+  if(spo2 < 90){ document.getElementById('emergency-banner').classList.add('show'); }
+}
+
+/* ============ DOCTOR DASHBOARD ============ */
+const mockPatients = [
+  {name:'Ramesh Kumar', age:64, risk:'High', spo2:'89%', visit:'2 days ago'},
+  {name:'Anita Mehta', age:57, risk:'Moderate', spo2:'93%', visit:'5 days ago'},
+  {name:'Farhan Ali', age:49, risk:'Low', spo2:'97%', visit:'2 weeks ago'},
+  {name:'Sunita Rao', age:71, risk:'High', spo2:'88%', visit:'Yesterday'},
+  {name:'Vikram Shah', age:52, risk:'Moderate', spo2:'92%', visit:'1 week ago'},
+  {name:'Leela Nair', age:60, risk:'Low', spo2:'96%', visit:'3 weeks ago'},
+];
+function renderDoctorTable(){
+  const tbody = document.getElementById('doctor-table');
+  tbody.innerHTML = mockPatients.map(p=>{
+    const cls = p.risk==='High'?'pill-high':p.risk==='Moderate'?'pill-mod':'pill-low';
+    return `<tr><td><b>${p.name}</b></td><td>${p.age}</td><td><span class="pill ${cls}">${p.risk}</span></td><td class="mono">${p.spo2}</td><td>${p.visit}</td><td><a class="btn btn-ghost" style="padding:6px 12px; font-size:12px;">View report</a></td></tr>`;
+  }).join('');
+}
+
+/* ============ ADMIN CHARTS ============ */
+function renderAdminCharts(){
+  const c1 = document.getElementById('chart-admin-risk');
+  const c2 = document.getElementById('chart-admin-growth');
+  if(chartAdminRisk) chartAdminRisk.destroy();
+  if(chartAdminGrowth) chartAdminGrowth.destroy();
+  chartAdminRisk = new Chart(c1, {type:'doughnut', data:{labels:['Low','Moderate','High'], datasets:[{data:[62,41,25], backgroundColor:['#059669','#D97706','#DC2626']}]}, options:{plugins:{legend:{position:'bottom'}}}});
+  chartAdminGrowth = new Chart(c2, {type:'line', data:{labels:['Feb','Mar','Apr','May','Jun','Jul'], datasets:[{label:'New registrations', data:[120,150,210,265,310,360], borderColor:'#0A4A6E', backgroundColor:'rgba(10,74,110,0.08)', fill:true, tension:.3}]}, options:{plugins:{legend:{display:false}}}});
+}
+
+/* ============ FAQ ============ */
+const faqs = [
+  {q:'Is this a medical diagnosis?', a:'No. AI LungCare produces a decision-support risk score to guide when to seek clinical evaluation — a licensed doctor makes the actual diagnosis.'},
+  {q:'What data do I need to get a risk score?', a:'Smoking history, current symptoms, and basic vitals like SpO₂ and heart rate. A spirometer or X-ray is optional, not required to start.'},
+  {q:'Is my health data secure?', a:'Yes — the platform uses JWT authentication, encrypted passwords, and role-based access so only your care team can view your records.'},
+  {q:'Can my doctor see my daily monitoring data?', a:'Yes, your assigned doctor sees your monitoring trends and AI reports in real time through the Doctor Dashboard.'},
+  {q:'What happens if my vitals are critical?', a:'The system automatically raises an emergency alert with a direct call-doctor and nearest-hospital option.'}
+];
+const faqList = document.getElementById('faq-list');
+faqList.innerHTML = faqs.map((f,i)=>`
+  <div class="faq-item" id="faq-${i}">
+    <div class="faq-q" onclick="toggleFaq(${i})"><span>${f.q}</span><span class="faq-plus">+</span></div>
+    <div class="faq-a">${f.a}</div>
+  </div>`).join('');
+function toggleFaq(i){ document.getElementById('faq-'+i).classList.toggle('open'); }
+
+/* ============ CHATBOT ============ */
+function toggleChat(){ document.getElementById('chat-window').classList.toggle('show'); }
+const kb = [
+  {k:['what is copd','copd?'], a:'COPD (Chronic Obstructive Pulmonary Disease) is a progressive lung condition that narrows the airways, causing breathlessness, cough and mucus over time. It includes chronic bronchitis and emphysema.'},
+  {k:['symptom'], a:'Common COPD symptoms: breathlessness (especially on exertion), chronic cough, wheezing, chest tightness, and mucus production. Symptoms usually build up gradually.'},
+  {k:['cause'], a:'The leading cause is long-term smoking, followed by exposure to dust, chemical fumes, and indoor/outdoor air pollution.'},
+  {k:['medication','medicine'], a:'Common treatments include bronchodilator inhalers, inhaled corticosteroids, and in some cases oral medication — always taken as prescribed by your doctor.'},
+  {k:['inhaler'], a:'Correct inhaler use: exhale fully, seal lips around the mouthpiece, press and inhale slowly and deeply, hold breath 10 seconds, then breathe out slowly. Ask your doctor to check your technique.'},
+  {k:['emergency'], a:'Seek emergency care immediately if you notice: SpO₂ below 90%, severe unrelenting breathlessness, blue lips/fingertips, confusion, or a very rapid heart rate.'},
+  {k:['lifestyle'], a:'Helpful lifestyle steps: quit smoking, stay physically active within your limits, eat small frequent high-protein meals, and keep up to date with flu/pneumonia vaccines.'},
+  {k:['breathing exercise'], a:'Try pursed-lip breathing: inhale through your nose for 2 counts, then exhale slowly through pursed lips for 4 counts. Repeat for 5 minutes, a few times a day.'},
+  {k:['nutrition','diet'], a:'A COPD-friendly diet favors small, frequent, high-protein, high-fibre meals, and avoids overly gas-forming or heavy meals that can make breathing harder after eating.'},
+  {k:['smoking cessation','quit smoking'], a:'Quitting smoking is the single most effective way to slow COPD progression. Combining counselling with nicotine-replacement therapy roughly doubles quit success rates.'},
+  {k:['hospital visit','when to see a doctor'], a:'See a doctor promptly if your breathlessness is worsening, you need your rescue inhaler more often, your sputum changes colour, or you have a fever alongside breathing symptoms.'},
+];
+function botReply(text){
+  const t = text.toLowerCase();
+  const hit = kb.find(item => item.k.some(k=>t.includes(k)));
+  return hit ? hit.a : "I can help with COPD basics, symptoms, medication, inhaler use, emergency signs, nutrition, and lifestyle. Could you rephrase your question around one of those topics?";
+}
+function pushMsg(text, cls){
+  const body = document.getElementById('chat-body');
+  const div = document.createElement('div');
+  div.className = 'msg ' + cls;
+  div.textContent = text;
+  body.appendChild(div);
+  body.scrollTop = body.scrollHeight;
+}
+function sendChat(){
+  const input = document.getElementById('chat-input');
+  const val = input.value.trim();
+  if(!val) return;
+  pushMsg(val, 'user');
+  input.value = '';
+  setTimeout(()=>pushMsg(botReply(val), 'bot'), 300);
+}
+function askChip(text){ pushMsg(text, 'user'); setTimeout(()=>pushMsg(botReply(text), 'bot'), 300); }
+</script>
+</body>
+</html>
